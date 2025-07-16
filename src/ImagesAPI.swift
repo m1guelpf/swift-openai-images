@@ -61,6 +61,9 @@ public final class ImagesAPI: Sendable {
 	///
 	/// - Parameter request: The request containing the parameters for image generation.
 	public func create(_ request: CreateImageRequest) async throws -> ImageGenerationResponse {
+		var request = request
+		request.stream = false
+
 		var req = self.request
 		req.httpMethod = "POST"
 		req.httpBody = try encoder.encode(request)
@@ -85,11 +88,11 @@ public final class ImagesAPI: Sendable {
 	/// - Parameter user: A unique identifier representing your end-user.
 	public func create(
 		prompt: String,
-		background: CreateImageRequest.Background? = nil,
+		background: ImageBackground? = nil,
 		moderation: CreateImageRequest.ModerationLevel? = nil,
 		n: Int? = nil,
 		outputCompression: Int? = nil,
-		outputFormat: CreateImageRequest.OutputFormat? = nil,
+		outputFormat: ImageOutputFormat? = nil,
 		quality: ImageQuality? = nil,
 		size: ImageSize? = nil,
 		user: String? = nil
@@ -111,6 +114,9 @@ public final class ImagesAPI: Sendable {
 	///
 	/// - Parameter request: The request containing the parameters for image editing.
 	public func edit(_ request: EditImageRequest) async throws -> ImageGenerationResponse {
+		var request = request
+		request.stream = false
+
 		var req = self.request
 		req.httpMethod = "POST"
 		req.url!.append(path: "v1/images/edits")
@@ -125,16 +131,24 @@ public final class ImagesAPI: Sendable {
 	///
 	/// - Parameter images: The image(s) to edit.
 	/// - Parameter prompt: A text description of the desired image(s).
+	/// - Parameter background: Allows to set transparency for the background of the generated image(s).
+	/// - Parameter inputFidelity: Control how much effort the model will exert to match the style and features, especially facial features, of input images.
 	/// - Parameter mask: An additional image whose fully transparent areas indicate where `image` should be edited.
 	/// - Parameter n: The number of images to generate.
+	/// - Parameter outputCompression: The compression level (0-100%) for the generated image(s).
+	/// - Parameter outputFormat: The format in which the generated image(s) are returned.
 	/// - Parameter quality: The quality of the image that will be generated.
 	/// - Parameter size: The size of the generated images.
 	/// - Parameter user: A unique identifier representing your end-user.
 	public func edit(
 		images: [EditImageRequest.Image],
 		prompt: String,
+		background: ImageBackground? = nil,
+		inputFidelity: EditImageRequest.ImageFidelity? = nil,
 		mask: EditImageRequest.Image? = nil,
 		n: Int? = nil,
+		outputCompression: Int? = nil,
+		outputFormat: ImageOutputFormat? = nil,
 		quality: ImageQuality? = nil,
 		size: ImageSize? = nil,
 		user: String? = nil
@@ -142,8 +156,12 @@ public final class ImagesAPI: Sendable {
 		try await edit(EditImageRequest(
 			images: images,
 			prompt: prompt,
+			background: background,
+			inputFidelity: inputFidelity,
 			mask: mask,
 			n: n,
+			outputCompression: outputCompression,
+			outputFormat: outputFormat,
 			quality: quality,
 			size: size,
 			user: user
@@ -154,16 +172,24 @@ public final class ImagesAPI: Sendable {
 	///
 	/// - Parameter image: The image to edit.
 	/// - Parameter prompt: A text description of the desired image(s).
+	/// - Parameter background: Allows to set transparency for the background of the generated image(s).
+	/// - Parameter inputFidelity: Control how much effort the model will exert to match the style and features, especially facial features, of input images.
 	/// - Parameter mask: An additional image whose fully transparent areas indicate where `image` should be edited.
 	/// - Parameter n: The number of images to generate.
+	/// - Parameter outputCompression: The compression level (0-100%) for the generated image(s).
+	/// - Parameter outputFormat: The format in which the generated image(s) are returned.
 	/// - Parameter quality: The quality of the image that will be generated.
 	/// - Parameter size: The size of the generated images.
 	/// - Parameter user: A unique identifier representing your end-user.
 	public func edit(
 		image: EditImageRequest.Image,
 		prompt: String,
+		background: ImageBackground? = nil,
+		inputFidelity: EditImageRequest.ImageFidelity? = nil,
 		mask: EditImageRequest.Image? = nil,
 		n: Int? = nil,
+		outputCompression: Int? = nil,
+		outputFormat: ImageOutputFormat? = nil,
 		quality: ImageQuality? = nil,
 		size: ImageSize? = nil,
 		user: String? = nil
@@ -171,8 +197,12 @@ public final class ImagesAPI: Sendable {
 		try await edit(EditImageRequest(
 			image: image,
 			prompt: prompt,
+			background: background,
+			inputFidelity: inputFidelity,
 			mask: mask,
 			n: n,
+			outputCompression: outputCompression,
+			outputFormat: outputFormat,
 			quality: quality,
 			size: size,
 			user: user

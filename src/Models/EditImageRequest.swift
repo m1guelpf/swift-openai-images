@@ -1,6 +1,12 @@
 import Foundation
 
 public struct EditImageRequest: Sendable {
+	/// Control how much effort the model will exert to match the style and features, especially facial features, of input images.
+	public enum ImageFidelity: String, CaseIterable, Equatable, Hashable, Codable, Sendable {
+		case high
+		case low
+	}
+
 	public struct Image: Equatable, Hashable, Sendable {
 		public enum Format: String, CaseIterable, Sendable {
 			case png = "image/png"
@@ -39,6 +45,15 @@ public struct EditImageRequest: Sendable {
 	/// The maximum length is 32000 characters.
 	public var prompt: String
 
+	/// Allows to set transparency for the background of the generated image(s).
+	///
+	/// When `auto` is used, the model will automatically determine the best background for the image.
+	/// If `transparent`, the output format needs to support transparency, so it should be set to either `png` (default value) or `webp`.
+	public var background: ImageBackground?
+
+	/// Control how much effort the model will exert to match the style and features, especially facial features, of input images.
+	public var inputFidelity: ImageFidelity?
+
 	/// An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where `image` should be edited.
 	///
 	/// If there are multiple images provided, the mask will be applied on the first image.
@@ -54,11 +69,31 @@ public struct EditImageRequest: Sendable {
 	/// Must be between 1 and 10.
 	public var n: Int?
 
+	/// The compression level (0-100%) for the generated image(s).
+	///
+	/// Only supported for the `webp` or `jpeg` output formats, and defaults to `100`.
+	public var outputCompression: Int?
+
+	/// The format in which the generated image(s) are returned.
+	///
+	/// Defaults to `png`.
+	public var outputFormat: ImageOutputFormat?
+
+	/// The number of partial images to generate.
+	///
+	/// This parameter is used for streaming responses that return partial images.
+	///
+	/// Value must be between 0 and 3. When set to 0, the response will be a single image sent in one streaming event.
+	public var partialImages: Int?
+
 	/// The quality of the image that will be generated.
 	public var quality: ImageQuality?
 
 	/// The size of the generated images.
 	public var size: ImageSize?
+
+	/// Edit the image in streaming mode.
+	public var stream: Bool?
 
 	/// A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	///
@@ -69,18 +104,30 @@ public struct EditImageRequest: Sendable {
 	///
 	/// - Parameter images: The images to edit.
 	/// - Parameter prompt: A text description of the desired image(s).
+	/// - Parameter background: Allows to set transparency for the background of the generated image(s).
+	/// - Parameter inputFidelity: Control how much effort the model will exert to match the style and features, especially facial features, of input images.
 	/// - Parameter mask: An additional image whose fully transparent areas indicate where `image` should be edited.
 	/// - Parameter n: The number of images to generate.
+	/// - Parameter outputCompression: The compression level (0-100%) for the generated image(s).
+	/// - Parameter outputFormat: The format in which the generated image(s) are returned.
+	/// - Parameter partialImages: The number of partial images to generate.
 	/// - Parameter quality: The quality of the image that will be generated.
 	/// - Parameter size: The size of the generated images.
+	/// - Parameter stream: Generate the image in streaming mode.
 	/// - Parameter user: A unique identifier representing your end-user.
 	public init(
 		images: [Image],
 		prompt: String,
+		background: ImageBackground? = nil,
+		inputFidelity: ImageFidelity? = nil,
 		mask: Image? = nil,
 		n: Int? = nil,
+		outputCompression: Int? = nil,
+		outputFormat: ImageOutputFormat? = nil,
+		partialImages: Int? = nil,
 		quality: ImageQuality? = nil,
 		size: ImageSize? = nil,
+		stream: Bool? = nil,
 		user: String? = nil
 	) {
 		self.n = n
@@ -90,28 +137,60 @@ public struct EditImageRequest: Sendable {
 		model = .gptImage
 		self.images = images
 		self.prompt = prompt
+		self.stream = stream
 		self.quality = quality
+		self.background = background
+		self.outputFormat = outputFormat
+		self.inputFidelity = inputFidelity
+		self.partialImages = partialImages
+		self.outputCompression = outputCompression
 	}
 
 	// Creates a new `EditImageRequest` instance.
 	///
 	/// - Parameter image: The image to edit.
 	/// - Parameter prompt: A text description of the desired image(s).
+	/// - Parameter background: Allows to set transparency for the background of the generated image(s).
+	/// - Parameter inputFidelity: Control how much effort the model will exert to match the style and features, especially facial features, of input images.
 	/// - Parameter mask: An additional image whose fully transparent areas indicate where `image` should be edited.
 	/// - Parameter n: The number of images to generate.
+	/// - Parameter outputCompression: The compression level (0-100%) for the generated image(s).
+	/// - Parameter outputFormat: The format in which the generated image(s) are returned.
+	/// - Parameter partialImages: The number of partial images to generate.
 	/// - Parameter quality: The quality of the image that will be generated.
 	/// - Parameter size: The size of the generated images.
+	/// - Parameter stream: Generate the image in streaming mode.
 	/// - Parameter user: A unique identifier representing your end-user.
 	public init(
 		image: Image,
 		prompt: String,
+		background: ImageBackground? = nil,
+		inputFidelity: ImageFidelity? = nil,
 		mask: Image? = nil,
 		n: Int? = nil,
+		outputCompression: Int? = nil,
+		outputFormat: ImageOutputFormat? = nil,
+		partialImages: Int? = nil,
 		quality: ImageQuality? = nil,
 		size: ImageSize? = nil,
+		stream: Bool? = nil,
 		user: String? = nil
 	) {
-		self.init(images: [image], prompt: prompt, mask: mask, n: n, quality: quality, size: size, user: user)
+		self.init(
+			images: [image],
+			prompt: prompt,
+			background: background,
+			inputFidelity: inputFidelity,
+			mask: mask,
+			n: n,
+			outputCompression: outputCompression,
+			outputFormat: outputFormat,
+			partialImages: partialImages,
+			quality: quality,
+			size: size,
+			stream: stream,
+			user: user
+		)
 	}
 }
 
@@ -147,8 +226,14 @@ extension EditImageRequest: FormDataEncodable {
 		if let n { entries.append(.string(paramName: "n", value: n)) }
 		entries.append(.string(paramName: "model", value: model.rawValue))
 		if let user { entries.append(.string(paramName: "user", value: user)) }
+		if let stream { entries.append(.string(paramName: "stream", value: stream)) }
 		if let size { entries.append(.string(paramName: "size", value: size.rawValue)) }
 		if let quality { entries.append(.string(paramName: "quality", value: quality.rawValue)) }
+		if let background { entries.append(.string(paramName: "background", value: background.rawValue)) }
+		if let partialImages { entries.append(.string(paramName: "partial_images", value: partialImages)) }
+		if let outputFormat { entries.append(.string(paramName: "output_format", value: outputFormat.rawValue)) }
+		if let inputFidelity { entries.append(.string(paramName: "input_fidelity", value: inputFidelity.rawValue)) }
+		if let outputCompression { entries.append(.string(paramName: "output_compression", value: outputCompression)) }
 		if let mask { entries.append(.file(paramName: "mask", fileName: mask.fileName, fileData: mask.data, contentType: mask.format.rawValue)) }
 
 		return entries
